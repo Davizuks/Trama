@@ -1,0 +1,738 @@
+:root {
+  --bg: #f5f3ee;
+  --panel: #fbfaf7;
+  --ink: #1c1b19;
+  --ink-soft: #6b6861;
+  --line: #dcd8cf;
+  --thread: #c2bdb1;
+  --brain: #0d7a61;
+  --note: #8d897f;
+  --decision: #7d4fd1;
+  --knowledge: #c23d86;
+  --journal: #9a7a12;
+  --content: #1a8ca1;
+  --busy: #c2560a;
+  --idle: #2a5fd0;
+  --other: #77736b;
+  --danger: #b3261e;
+  --terminal-bg: #141615;
+  --terminal-ink: #e8e6e0;
+  --terminal-line: #2b2f2c;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111312;
+    --panel: #181b19;
+    --ink: #ebe8e1;
+    --ink-soft: #9a978f;
+    --line: #2b2f2c;
+    --thread: #3d423e;
+    --brain: #45c9a4;
+    --note: #77756e;
+    --decision: #b48cf2;
+    --knowledge: #f27ba5;
+    --journal: #e0bd4f;
+    --content: #5fcfe3;
+    --busy: #f5a23c;
+    --idle: #83a9ff;
+    --other: #8c8981;
+    --danger: #ff8a80;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    14px/1.45 ui-sans-serif,
+    system-ui,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+:focus-visible {
+  outline: 2px solid var(--idle);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--idle);
+}
+
+code {
+  font:
+    0.92em ui-monospace,
+    Menlo,
+    monospace;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.muted {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+}
+
+/* Bolinha de estado. A cor nunca vem sozinha: o texto do estado aparece ao lado. */
+.status {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--other);
+}
+
+.status.busy {
+  background: var(--busy);
+}
+
+.status.idle {
+  background: var(--idle);
+}
+
+/* ---------- Estrutura ---------- */
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'topbar topbar'
+    'banner banner'
+    'sidebar main';
+}
+
+.topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.live {
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+
+.live.offline {
+  color: var(--danger);
+}
+
+.banner {
+  grid-area: banner;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--danger);
+}
+
+.sidebar {
+  grid-area: sidebar;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 0 16px 24px;
+}
+
+.sidebar h2 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin: 20px 0 8px;
+}
+
+.sidebar p {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.chat-list,
+.plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+}
+
+.chat-list .chat-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.chat-list .muted {
+  grid-column: 2;
+  font-size: 12.5px;
+}
+
+.plain-list {
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.plain-list li {
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.plain-list li.done {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+.main {
+  grid-area: main;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  border-color: transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 7px 12px;
+  margin-bottom: -1px;
+}
+
+.tabs button[aria-selected='true'] {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--bg);
+  border-color: var(--line);
+}
+
+/* ---------- Grafo ---------- */
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.stage[hidden] {
+  display: none;
+}
+
+.threads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.thread {
+  stroke: var(--thread);
+  stroke-width: 1;
+}
+
+.thread.chat {
+  stroke-width: 2;
+}
+
+.thread.highlighted {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.point {
+  cursor: pointer;
+}
+
+.point circle {
+  fill: var(--note);
+}
+
+.point text {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.point.brain circle {
+  fill: var(--brain);
+}
+
+.point.brain text,
+.point.project text,
+.point.folder text {
+  fill: var(--ink);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.point.project circle,
+.point.folder circle {
+  fill: var(--bg);
+  stroke: var(--brain);
+  stroke-width: 2.5;
+}
+
+.point.folder.outside circle {
+  stroke: var(--other);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.point.note.group-decisoes circle {
+  fill: var(--decision);
+}
+
+.point.note.group-conhecimento circle {
+  fill: var(--knowledge);
+}
+
+.point.note.group-diario circle {
+  fill: var(--journal);
+}
+
+.point.note.group-conteudo circle {
+  fill: var(--content);
+}
+
+.point.selected circle {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.windows {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.window-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.fit-button {
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+/* ---------- Janelas de chat ---------- */
+
+.window {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--other);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+
+.window.busy {
+  border-top-color: var(--busy);
+}
+
+.window.idle {
+  border-top-color: var(--idle);
+}
+
+.window-anchor.selected .window {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .window.busy {
+    animation: working 1.8s ease-in-out infinite;
+  }
+
+  @keyframes working {
+    50% {
+      box-shadow:
+        0 8px 24px rgb(0 0 0 / 0.16),
+        0 0 0 6px color-mix(in srgb, var(--busy) 28%, transparent);
+    }
+  }
+}
+
+.window-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  user-select: none;
+}
+
+.window-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.window-details {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.window-bar button {
+  flex: none;
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.window.terminal {
+  background: var(--terminal-bg);
+  border-color: var(--terminal-line);
+  color: var(--terminal-ink);
+}
+
+.window.terminal .window-details {
+  color: #9a978f;
+}
+
+.window.terminal .window-bar button {
+  border-color: #3d423e;
+}
+
+.window.terminal .window-bar button:hover {
+  border-color: #9a978f;
+}
+
+.window.external .window-bar {
+  padding-bottom: 2px;
+}
+
+.window.external .window-title {
+  flex: 1;
+}
+
+.window.external .window-details {
+  flex: none;
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  cursor: auto;
+}
+
+.window-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.window-footer p {
+  margin: 0;
+}
+
+.window-footer button {
+  flex: none;
+  color: var(--ink);
+}
+
+.terminal-slot {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 4px 6px 10px;
+  background: var(--terminal-bg);
+  cursor: text;
+}
+
+.terminal-slot .muted {
+  padding: 12px 4px;
+  color: #9a978f;
+}
+
+.terminal-host {
+  width: 100%;
+  height: 100%;
+}
+
+.full-terminal {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: var(--terminal-bg);
+}
+
+/* ---------- Conversas ---------- */
+
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 10px;
+  padding: 7px 11px;
+  max-width: 92%;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--idle);
+  color: var(--bg);
+}
+
+.message.user code {
+  background: rgb(0 0 0 / 0.18);
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.message.tool {
+  align-self: flex-start;
+  padding: 0 4px;
+  color: var(--ink-soft);
+  font:
+    12px/1.4 ui-monospace,
+    Menlo,
+    monospace;
+}
+
+.message .author {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-bottom: 2px;
+}
+
+.conversation {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.conversation-track {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.conversation .message.assistant {
+  background: var(--panel);
+}
+
+/* ---------- Diálogo ---------- */
+
+.dialog {
+  width: min(460px, calc(100vw - 32px));
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.dialog label {
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.dialog select,
+.dialog input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 8px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dialog-actions button {
+  padding: 6px 14px;
+}
+
+@media (max-width: 760px) {
+  .app {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 70vh auto;
+    grid-template-areas:
+      'topbar'
+      'banner'
+      'main'
+      'sidebar';
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* A barra de rolagem padrão é clara e destoa do terminal escuro. */
+.terminal-host .xterm-viewport,
+.window-body,
+.conversation {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink-soft) 55%, transparent) transparent;
+}
+
+.terminal-host .xterm-viewport {
+  scrollbar-color: #3d423e transparent;
+}
