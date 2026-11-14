@@ -6,9 +6,17 @@ import {
   type PointerEvent,
   type RefObject,
 } from 'react'
-import { fitView, HOME_VIEW, panView, zoomView, type View } from '../../domain/graph.ts'
+import {
+  fitView,
+  HOME_VIEW,
+  panView,
+  wheelPixels,
+  zoomView,
+  type View,
+} from '../../domain/graph.ts'
 
 const ZOOM_STEP = 0.0015
+const FIT_KEY = 'KeyC'
 
 const isTyping = () =>
   document.activeElement instanceof HTMLInputElement ||
@@ -20,10 +28,16 @@ const isOverWindow = (target: EventTarget | null) =>
 export function useCanvasView(canvas: RefObject<HTMLElement | null>, refitWhenChanges?: number) {
   const [view, setView] = useState<View>(HOME_VIEW)
   const [spaceHeld, setSpaceHeld] = useState(false)
+  const latestFitAll = useRef<() => void>(() => {})
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || isTyping()) return
+      if (isTyping()) return
+      if (event.code === FIT_KEY && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        latestFitAll.current()
+        return
+      }
+      if (event.code !== 'Space') return
       // Sem isto o espaço rola a página ou aciona o botão em foco.
       event.preventDefault()
       setSpaceHeld(true)
@@ -53,12 +67,15 @@ export function useCanvasView(canvas: RefObject<HTMLElement | null>, refitWhenCh
       const zooming = event.ctrlKey || event.metaKey
       if (!zooming && isOverWindow(event.target)) return
       event.preventDefault()
+      // O Firefox informa a roda do mouse em linhas, não em pixels.
+      const deltaX = wheelPixels(event.deltaX, event.deltaMode, element.clientWidth)
+      const deltaY = wheelPixels(event.deltaY, event.deltaMode, element.clientHeight)
       if (zooming) {
         const box = element.getBoundingClientRect()
         const cursor = { x: event.clientX - box.left, y: event.clientY - box.top }
-        setView((current) => zoomView(current, Math.exp(-event.deltaY * ZOOM_STEP), cursor))
+        setView((current) => zoomView(current, Math.exp(-deltaY * ZOOM_STEP), cursor))
       } else {
-        setView((current) => panView(current, { x: -event.deltaX, y: -event.deltaY }))
+        setView((current) => panView(current, { x: -deltaX, y: -deltaY }))
       }
     }
 
@@ -118,7 +135,6 @@ export function useCanvasView(canvas: RefObject<HTMLElement | null>, refitWhenCh
     setView(fitView(content, frame, origin))
   }
 
-  const latestFitAll = useRef(fitAll)
   useLayoutEffect(() => {
     latestFitAll.current = fitAll
   })

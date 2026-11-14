@@ -8,6 +8,7 @@ import {
   HOME_VIEW,
   movePoint,
   panView,
+  wheelPixels,
   WINDOW_SHAPE,
   zoomView,
 } from './graph.ts'
@@ -174,5 +175,13 @@ describe('forks ao lado do chat de origem', () => {
   it('não gasta lugar no arco com os forks', () => {
     expect(at('pai').x).toBeCloseTo(0)
     expect(at('outro').x).toBeCloseTo(1)
+  })
+})
+
+describe('wheelPixels', () => {
+  it('mantém pixels, e converte linhas e páginas para pixels', () => {
+    expect(wheelPixels(120, 0, 800)).toBe(120)
+    expect(wheelPixels(3, 1, 800)).toBe(120)
+    expect(wheelPixels(-1, 2, 800)).toBe(-800)
   })
 })

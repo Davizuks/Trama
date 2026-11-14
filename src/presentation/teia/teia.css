@@ -48,7 +48,8 @@
   gap: 16px;
   cursor: auto;
 }
-.grafo__atalho kbd {
+.grafo__atalho kbd,
+kbd.grafo__atalho {
   padding: 2px 6px;
   border: 1px solid var(--borda-forte);
   border-radius: var(--raio-2);
@@ -62,6 +63,7 @@
   }
 }
 .grafo__centralizar {
+  gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--borda-forte);
   border-radius: var(--raio-3);

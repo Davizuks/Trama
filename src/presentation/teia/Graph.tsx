@@ -149,8 +149,9 @@ export function Graph({
         <span className="grafo__atalho c-3">
           <kbd>Ctrl</kbd> + roda para zoom
         </span>
-        <button type="button" className="grafo__centralizar c-2" onClick={fitAll}>
+        <button type="button" className="linha grafo__centralizar c-2" onClick={fitAll}>
           Centralizar
+          <kbd className="grafo__atalho">C</kbd>
         </button>
       </div>
     </div>

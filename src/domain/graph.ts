@@ -232,3 +232,11 @@ export function forkStepOn(board: { width: number; height: number }): Position {
     y: (CHAT_WINDOW.height + WINDOW_GAP) / board.height,
   }
 }
+
+const PIXELS_PER_LINE = 40
+
+export function wheelPixels(delta: number, deltaMode: number, pageSize: number): number {
+  if (deltaMode === 1) return delta * PIXELS_PER_LINE
+  if (deltaMode === 2) return delta * pageSize
+  return delta
+}
