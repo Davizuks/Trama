@@ -147,7 +147,7 @@ export function Graph({
           <kbd>Espaço</kbd> + arrastar para mover
         </span>
         <span className="grafo__atalho c-3">
-          <kbd>Ctrl</kbd> + roda para zoom
+          <kbd>Ctrl</kbd> + scroll para zoom
         </span>
         <button type="button" className="linha grafo__centralizar c-3" onClick={fitAll}>
           <kbd>C</kbd>
