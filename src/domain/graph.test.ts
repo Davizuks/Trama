@@ -1,119 +1,140 @@
 import { describe, expect, it } from 'vitest'
-import { BRAIN_ID, buildGraph } from './graph.ts'
-import type { BrainNote, ClaudeSession, WebState } from './model.ts'
+import {
+  anchorFor,
+  drawGraph,
+  fitView,
+  HOME_VIEW,
+  movePoint,
+  panView,
+  WINDOW_SHAPE,
+  zoomView,
+} from './graph.ts'
+import type { Brain, Chat } from './model.ts'
 
-const note = (id: string, extra: Partial<BrainNote> = {}): BrainNote => ({
+const brain: Brain = {
+  nodes: [
+    { id: 'cerebro', label: 'Cérebro', kind: 'brain' },
+    { id: 'portfolio', label: 'Portfólio', kind: 'project' },
+    { id: 'quadro', label: 'Quadro', kind: 'note' },
+  ],
+  links: [['cerebro', 'portfolio']],
+}
+
+const chat = (id: string, project: string): Chat => ({
   id,
-  title: id,
-  group: '',
-  path: `/ws/cerebro/${id}.md`,
-  projectDir: null,
-  links: [],
-  ...extra,
+  name: id,
+  role: 'livre',
+  project,
+  status: 'working',
+  lastActivity: 'agora',
+  summary: '',
+  transcript: [],
 })
 
-const session = (pid: number, cwd: string, extra: Partial<ClaudeSession> = {}): ClaudeSession => ({
-  pid,
-  id: `id-${pid}`,
-  name: `chat-${pid}`,
-  cwd,
-  status: 'idle',
-  startedAt: null,
-  updatedAt: null,
-  terminalId: null,
-  role: null,
-  task: null,
-  recent: [],
-  currentTool: null,
-  ...extra,
+describe('drawGraph', () => {
+  it('põe o cérebro no centro e todos os pontos dentro do desenho', () => {
+    const { points } = drawGraph(brain, [chat('a', 'Portfólio'), chat('b', 'Outro')])
+    expect(points.find((point) => point.id === 'cerebro')).toMatchObject({ x: 0.5, y: 0.5 })
+    for (const point of points) {
+      expect(point.x).toBeGreaterThanOrEqual(0)
+      expect(point.x).toBeLessThanOrEqual(1)
+      expect(point.y).toBeGreaterThanOrEqual(0)
+      expect(point.y).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('liga cada chat ao seu projeto, ou ao cérebro quando o projeto não está na teia', () => {
+    const { wires } = drawGraph(brain, [chat('a', 'Portfólio'), chat('b', 'Outro')])
+    expect(wires).toContainEqual(['a', 'portfolio'])
+    expect(wires).toContainEqual(['b', 'cerebro'])
+    expect(wires).toContainEqual(['cerebro', 'portfolio'])
+  })
+
+  it('produz sempre o mesmo desenho para os mesmos dados', () => {
+    expect(drawGraph(brain, [chat('a', 'Portfólio')])).toEqual(
+      drawGraph(brain, [chat('a', 'Portfólio')]),
+    )
+  })
 })
 
-const state = (extra: Partial<WebState>): WebState => ({
-  now: 0,
-  workspaceDir: '/ws',
-  homeDir: '/home/me',
-  sessions: [],
-  terminals: [],
-  notes: [],
-  queue: [],
-  messages: [],
-  folders: [],
-  ...extra,
+describe('WINDOW_SHAPE', () => {
+  it('põe os chats nas bordas e desce o cérebro para o meio de baixo', () => {
+    const { points } = drawGraph(brain, [chat('a', 'Portfólio'), chat('b', 'Outro')], WINDOW_SHAPE)
+    const at = (id: string) => points.find((point) => point.id === id)!
+    expect(at('a').x).toBeCloseTo(0)
+    expect(at('b').x).toBeCloseTo(1)
+    expect(at('cerebro').y).toBeGreaterThan(0.5)
+  })
 })
 
-const edgeKeys = (graph: ReturnType<typeof buildGraph>) =>
-  graph.edges.map((edge) => `${edge.from}>${edge.to}`)
-
-describe('buildGraph', () => {
-  it('trata a nota INDEX como o próprio cérebro', () => {
-    const graph = buildGraph(
-      state({ notes: [note('index', { links: ['quadro'] }), note('quadro')] }),
-    )
-
-    expect(graph.nodes.map((n) => n.id)).toEqual([BRAIN_ID, 'note:quadro'])
-    expect(edgeKeys(graph)).toEqual([`${BRAIN_ID}>note:quadro`])
+describe('anchorFor', () => {
+  it('liga um fork ao chat de onde ele saiu', () => {
+    expect(anchorFor(brain, { ...chat('f', 'Portfólio'), forkOf: 'a' })).toBe('a')
   })
 
-  it('prende ao cérebro a nota que ninguém cita', () => {
-    const graph = buildGraph(state({ notes: [note('solta')] }))
+  it('liga o chat ao projeto dele, ou ao cérebro quando o projeto não está na teia', () => {
+    expect(anchorFor(brain, chat('a', 'Portfólio'))).toBe('portfolio')
+    expect(anchorFor(brain, chat('b', 'Outro'))).toBe('cerebro')
+    expect(anchorFor({ nodes: [], links: [] }, chat('c', 'Outro'))).toBeUndefined()
+  })
+})
 
-    expect(edgeKeys(graph)).toEqual([`${BRAIN_ID}>note:solta`])
+describe('movePoint', () => {
+  const area = { width: 1000, height: 500 }
+
+  it('converte o arrasto em pixels para frações da área', () => {
+    expect(movePoint({ x: 0.5, y: 0.5 }, { x: 100, y: -50 }, area)).toEqual({ x: 0.6, y: 0.4 })
   })
 
-  it('não repete a ligação quando duas notas se citam', () => {
-    const graph = buildGraph(
-      state({ notes: [note('a', { links: ['b'] }), note('b', { links: ['a'] })] }),
-    )
+  it('deixa levar o ponto para fora do desenho original', () => {
+    expect(movePoint({ x: 0.9, y: 0.1 }, { x: 500, y: -500 }, area)).toEqual({ x: 1.4, y: -0.9 })
+  })
+})
 
-    expect(edgeKeys(graph)).toEqual(['note:a>note:b'])
+describe('vista da teia', () => {
+  it('desloca somando o arrasto', () => {
+    expect(panView(HOME_VIEW, { x: 30, y: -10 })).toEqual({ x: 30, y: -10, scale: 1 })
   })
 
-  it('liga o chat à nota do projeto em que ele trabalha', () => {
-    const graph = buildGraph(
-      state({
-        notes: [note('index', { links: ['site'] }), note('site', { projectDir: '/ws/site' })],
-        sessions: [session(7, '/ws/site')],
-      }),
-    )
-
-    expect(graph.nodes.find((n) => n.id === 'note:site')?.kind).toBe('project')
-    expect(edgeKeys(graph)).toContain('external:7>note:site')
+  it('aproxima mantendo parado o ponto sob o cursor', () => {
+    const cursor = { x: 200, y: 100 }
+    const zoomed = zoomView(HOME_VIEW, 2, cursor)
+    expect(zoomed.scale).toBe(2)
+    expect((cursor.x - zoomed.x) / zoomed.scale).toBe(cursor.x)
+    expect((cursor.y - zoomed.y) / zoomed.scale).toBe(cursor.y)
   })
 
-  it('liga direto ao cérebro o chat aberto na raiz da teia', () => {
-    const graph = buildGraph(state({ sessions: [session(1, '/ws')] }))
+  it('limita a escala entre 20% e 200%', () => {
+    expect(zoomView(HOME_VIEW, 10, { x: 0, y: 0 }).scale).toBe(2)
+    expect(zoomView(HOME_VIEW, 0.01, { x: 0, y: 0 }).scale).toBe(0.2)
+  })
+})
 
-    expect(edgeKeys(graph)).toEqual([`external:1>${BRAIN_ID}`])
+describe('fitView', () => {
+  const canvas = { width: 1000, height: 600 }
+  const origin = { x: 100, y: 50 }
+  const onScreen = (
+    view: { x: number; y: number; scale: number },
+    q: { x: number; y: number },
+  ) => ({
+    x: origin.x + view.x + (q.x - origin.x) * view.scale,
+    y: origin.y + view.y + (q.y - origin.y) * view.scale,
   })
 
-  it('deixa fora da teia a pasta que não pertence ao workspace', () => {
-    const graph = buildGraph(state({ sessions: [session(2, '/outro/lugar')] }))
-
-    const folder = graph.nodes.find((n) => n.kind === 'folder')
-    expect(folder).toMatchObject({ label: 'lugar', insideWorkspace: false })
-    expect(edgeKeys(graph)).toEqual(['external:2>folder:/outro/lugar'])
+  it('afasta até o conteúdo caber inteiro, com folga, e o centraliza', () => {
+    const content = { x: -500, y: -200, width: 2000, height: 1000 }
+    const view = fitView(content, canvas, origin, 24)
+    const topLeft = onScreen(view, { x: content.x, y: content.y })
+    const bottomRight = onScreen(view, { x: content.x + 2000, y: content.y + 1000 })
+    expect(topLeft.x).toBeGreaterThanOrEqual(24 - 1e-9)
+    expect(topLeft.y).toBeGreaterThanOrEqual(24 - 1e-9)
+    expect(bottomRight.x).toBeLessThanOrEqual(canvas.width - 24 + 1e-9)
+    expect(bottomRight.y).toBeLessThanOrEqual(canvas.height - 24 + 1e-9)
+    expect(topLeft.x).toBeCloseTo(canvas.width - bottomRight.x)
+    expect(topLeft.y).toBeCloseTo(canvas.height - bottomRight.y)
   })
 
-  it('mostra como terminal o chat que roda dentro da Trama', () => {
-    const graph = buildGraph(
-      state({
-        terminals: [{ id: 't1', cwd: '/ws', pid: 9, role: 'maestro' }],
-        sessions: [session(9, '/ws', { terminalId: 't1', name: 'maestro-1' })],
-      }),
-    )
-
-    expect(graph.nodes.filter((n) => n.kind === 'external')).toHaveLength(0)
-    expect(graph.nodes.find((n) => n.kind === 'terminal')).toMatchObject({
-      id: 'terminal:t1',
-      label: 'maestro-1',
-    })
-  })
-
-  it('nomeia pelo papel o terminal cujo chat ainda está iniciando', () => {
-    const graph = buildGraph(
-      state({ terminals: [{ id: 't1', cwd: '/ws/site', pid: 9, role: 'revisor' }] }),
-    )
-
-    expect(graph.nodes.find((n) => n.kind === 'terminal')?.label).toBe('revisor')
+  it('não amplia um conteúdo pequeno além do tamanho real', () => {
+    expect(fitView({ x: 400, y: 200, width: 100, height: 100 }, canvas, origin).scale).toBe(1)
   })
 })

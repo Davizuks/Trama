@@ -1,100 +1,184 @@
-import type { BrainNote, ClaudeSession, TerminalInfo, WebState } from './model.ts'
+import type { Brain, BrainNodeKind, Chat } from './model.ts'
 
-export const BRAIN_ID = 'brain'
-const INDEX_NOTE = 'index'
-
-export type GraphNode =
-  | { id: typeof BRAIN_ID; kind: 'brain'; label: string }
-  | { id: string; kind: 'note' | 'project'; label: string; note: BrainNote }
-  | { id: string; kind: 'folder'; label: string; cwd: string; insideWorkspace: boolean }
-  | {
-      id: string
-      kind: 'terminal'
-      label: string
-      terminal: TerminalInfo
-      session: ClaudeSession | null
-      hubId: string
-    }
-  | { id: string; kind: 'external'; label: string; session: ClaudeSession; hubId: string }
-
-export interface GraphEdge {
-  from: string
-  to: string
-  kind: 'link' | 'chat'
+export interface GraphPoint {
+  id: string
+  label: string
+  kind: BrainNodeKind | 'chat'
+  x: number
+  y: number
 }
 
-export interface Graph {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+export interface Position {
+  x: number
+  y: number
 }
 
-export const baseName = (dir: string): string => dir.split('/').filter(Boolean).pop() ?? dir
+export function movePoint(
+  from: Position,
+  delta: Position,
+  area: { width: number; height: number },
+): Position {
+  return { x: from.x + delta.x / area.width, y: from.y + delta.y / area.height }
+}
 
-const noteNodeId = (noteId: string) => (noteId === INDEX_NOTE ? BRAIN_ID : `note:${noteId}`)
+export interface View {
+  x: number
+  y: number
+  scale: number
+}
 
-/**
- * Monta a teia: o cérebro no centro, as notas ligadas pelos seus wikilinks e cada chat preso
- * ao projeto (ou à pasta) em que está trabalhando.
- */
-export function buildGraph(state: WebState): Graph {
-  const nodes = new Map<string, GraphNode>()
-  const edges: GraphEdge[] = []
-  const seen = new Set<string>()
+export const HOME_VIEW: View = { x: 0, y: 0, scale: 1 }
 
-  const connect = (from: string, to: string, kind: GraphEdge['kind']) => {
-    if (from === to || !nodes.has(from) || !nodes.has(to)) return
-    const key = from < to ? `${from}|${to}` : `${to}|${from}`
-    if (seen.has(key)) return
-    seen.add(key)
-    edges.push({ from, to, kind })
+const MIN_SCALE = 0.2
+const MAX_SCALE = 2
+
+export function panView(view: View, delta: Position): View {
+  return { ...view, x: view.x + delta.x, y: view.y + delta.y }
+}
+
+export function zoomView(view: View, factor: number, cursor: Position): View {
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, view.scale * factor))
+  const ratio = scale / view.scale
+  return {
+    scale,
+    x: cursor.x - (cursor.x - view.x) * ratio,
+    y: cursor.y - (cursor.y - view.y) * ratio,
+  }
+}
+
+export interface GraphDrawing {
+  points: GraphPoint[]
+  wires: Array<[from: string, to: string]>
+}
+
+interface Arc {
+  start: number
+  end: number
+  rx: number
+  ry: number
+}
+
+export interface GraphShape {
+  center: { x: number; y: number }
+  projects: Arc
+  notes: [Arc, Arc]
+  chats: Arc
+}
+
+export const COMPACT_SHAPE: GraphShape = {
+  center: { x: 0.5, y: 0.5 },
+  projects: { start: 0.6, end: 0.9, rx: 0.26, ry: 0.26 },
+  notes: [
+    { start: 0.1, end: 0.42, rx: 0.4, ry: 0.4 },
+    { start: 0.1, end: 0.42, rx: 0.27, ry: 0.27 },
+  ],
+  chats: { start: 0.46, end: 1.04, rx: 0.42, ry: 0.42 },
+}
+
+export const TALL_SHAPE: GraphShape = {
+  center: { x: 0.5, y: 0.52 },
+  projects: { start: 0.62, end: 0.88, rx: 0.3, ry: 0.12 },
+  notes: [
+    { start: 0.1, end: 0.4, rx: 0.4, ry: 0.3 },
+    { start: 0.1, end: 0.4, rx: 0.24, ry: 0.18 },
+  ],
+  chats: { start: 0.58, end: 0.92, rx: 0.36, ry: 0.42 },
+}
+
+export const WINDOW_SHAPE: GraphShape = {
+  center: { x: 0.5, y: 0.56 },
+  projects: { start: 0.62, end: 0.88, rx: 0.2, ry: 0.2 },
+  notes: [
+    { start: 0.12, end: 0.38, rx: 0.28, ry: 0.3 },
+    { start: 0.12, end: 0.38, rx: 0.18, ry: 0.18 },
+  ],
+  chats: { start: 0.5, end: 1, rx: 0.5, ry: 0.52 },
+}
+
+function spread(count: number, arc: Arc): number[] {
+  if (count === 1) return [(arc.start + arc.end) / 2]
+  return Array.from(
+    { length: count },
+    (_, i) => arc.start + ((arc.end - arc.start) * i) / (count - 1),
+  )
+}
+
+function onArc(turn: number, arc: Arc, center: GraphShape['center']): { x: number; y: number } {
+  const angle = turn * 2 * Math.PI
+  return { x: center.x + arc.rx * Math.cos(angle), y: center.y + arc.ry * Math.sin(angle) }
+}
+
+export function anchorFor(brain: Brain, chat: Chat): string | undefined {
+  if (chat.forkOf) return chat.forkOf
+  const project = brain.nodes.find((node) => node.kind === 'project' && node.label === chat.project)
+  return (project ?? brain.nodes.find((node) => node.kind === 'brain'))?.id
+}
+
+export function drawGraph(
+  brain: Brain,
+  chats: Chat[],
+  shape: GraphShape = COMPACT_SHAPE,
+): GraphDrawing {
+  const byKind = (kind: BrainNodeKind) => brain.nodes.filter((node) => node.kind === kind)
+  const place = (
+    items: Array<{ id: string; label: string }>,
+    kind: GraphPoint['kind'],
+    arcs: Arc[],
+  ): GraphPoint[] => {
+    const turns = spread(items.length, arcs[0])
+    return items.map((item, i) => ({
+      id: item.id,
+      label: item.label,
+      kind,
+      ...onArc(turns[i], arcs[i % arcs.length], shape.center),
+    }))
   }
 
-  nodes.set(BRAIN_ID, { id: BRAIN_ID, kind: 'brain', label: 'Cérebro' })
+  const points: GraphPoint[] = [
+    ...byKind('brain').map((node) => ({ ...node, ...shape.center })),
+    ...place(byKind('project'), 'project', [shape.projects]),
+    ...place(byKind('note'), 'note', shape.notes),
+    ...place(
+      chats.map((chat) => ({ id: chat.id, label: chat.name })),
+      'chat',
+      [shape.chats],
+    ),
+  ]
 
-  const projectByDir = new Map<string, string>()
-  for (const note of state.notes) {
-    if (note.id === INDEX_NOTE) continue
-    const id = noteNodeId(note.id)
-    nodes.set(id, { id, kind: note.projectDir ? 'project' : 'note', label: note.title, note })
-    if (note.projectDir) projectByDir.set(note.projectDir, id)
-  }
-  for (const note of state.notes) {
-    for (const link of note.links) connect(noteNodeId(note.id), noteNodeId(link), 'link')
-  }
-  // Nota que ninguém cita fica presa ao cérebro, para não flutuar solta.
-  const linked = new Set(edges.flatMap((edge) => [edge.from, edge.to]))
-  for (const node of [...nodes.values()]) {
-    if (node.kind !== 'brain' && !linked.has(node.id)) connect(BRAIN_ID, node.id, 'link')
-  }
+  const chatWires = chats.flatMap((chat): Array<[string, string]> => {
+    const anchor = anchorFor(brain, chat)
+    return anchor ? [[chat.id, anchor]] : []
+  })
+  return { points, wires: [...brain.links, ...chatWires] }
+}
 
-  const hubFor = (cwd: string): string => {
-    if (cwd === state.workspaceDir) return BRAIN_ID
-    const project = projectByDir.get(cwd)
-    if (project) return project
-    const id = `folder:${cwd}`
-    if (!nodes.has(id)) {
-      const insideWorkspace = cwd.startsWith(`${state.workspaceDir}/`)
-      nodes.set(id, { id, kind: 'folder', label: baseName(cwd), cwd, insideWorkspace })
-      if (insideWorkspace) connect(id, BRAIN_ID, 'link')
-    }
-    return id
-  }
+export interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
-  for (const terminal of state.terminals) {
-    const session = state.sessions.find((s) => s.terminalId === terminal.id) ?? null
-    const hubId = hubFor(terminal.cwd)
-    const id = `terminal:${terminal.id}`
-    const label = session?.name ?? terminal.role ?? baseName(terminal.cwd)
-    nodes.set(id, { id, kind: 'terminal', label, terminal, session, hubId })
-    connect(id, hubId, 'chat')
+export function fitView(
+  content: Box,
+  canvas: { width: number; height: number },
+  origin: Position,
+  padding = 24,
+): View {
+  const scale = Math.max(
+    MIN_SCALE,
+    Math.min(
+      1,
+      (canvas.width - 2 * padding) / content.width,
+      (canvas.height - 2 * padding) / content.height,
+    ),
+  )
+  const left = (canvas.width - content.width * scale) / 2
+  const top = (canvas.height - content.height * scale) / 2
+  return {
+    scale,
+    // A escala é aplicada em torno de `origin`, por isso ele entra na conta.
+    x: left - content.x * scale - origin.x * (1 - scale),
+    y: top - content.y * scale - origin.y * (1 - scale),
   }
-  for (const session of state.sessions) {
-    if (session.terminalId) continue
-    const hubId = hubFor(session.cwd)
-    const id = `external:${session.pid}`
-    nodes.set(id, { id, kind: 'external', label: session.name, session, hubId })
-    connect(id, hubId, 'chat')
-  }
-
-  return { nodes: [...nodes.values()], edges }
 }

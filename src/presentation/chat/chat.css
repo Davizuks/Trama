@@ -1,0 +1,249 @@
+.linha-chat {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--raio-3);
+}
+.linha-chat:hover,
+.linha-chat--selecionada {
+  background: var(--fundo-2);
+}
+.linha-chat--fork {
+  padding-left: 26px;
+}
+.linha-chat__estado {
+  padding-top: 6px;
+}
+.linha-chat__conteudo {
+  gap: 2px;
+}
+.linha-chat__topo {
+  gap: 8px;
+}
+
+.janela {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--borda-sutil);
+  border-radius: var(--raio-4);
+  background: var(--fundo-1);
+  box-shadow: var(--sombra-janela);
+}
+.janela--selecionada {
+  border-color: var(--borda-forte);
+}
+.janela__cabecalho {
+  gap: 10px;
+  padding: 14px 14px 12px 18px;
+}
+.janela__cabecalho .botao-icone {
+  padding: 4px;
+  color: var(--texto-3);
+}
+.janela__cabecalho--alca {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.janela__cabecalho--alca:active {
+  cursor: grabbing;
+}
+.janela__rodape {
+  position: relative;
+  padding: 12px;
+}
+
+.tela {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 4px 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.responder {
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--raio-3);
+  background: var(--fundo-2);
+}
+.responder input {
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--texto-1);
+}
+.responder input::placeholder {
+  color: var(--texto-3);
+}
+.responder:focus-within {
+  outline: 2px solid var(--borda-forte);
+}
+
+.pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-4);
+  background: var(--fundo-2);
+  box-shadow: var(--sombra-pedido);
+}
+.pedido__cabecalho {
+  gap: 8px;
+}
+.pedido__bloco {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--raio-3);
+  background: var(--fundo-base);
+  color: var(--texto-1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pedido__acoes {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.janela__rodape .pedido {
+  box-shadow: none;
+}
+
+.decisao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--raio-3);
+  background: var(--fundo-2);
+}
+.decisao__acoes {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.decisao .botao--secundario {
+  background: var(--fundo-3);
+}
+
+.cartao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--borda-sutil);
+  border-radius: var(--raio-4);
+  background: var(--fundo-1);
+}
+.cartao__cabecalho {
+  gap: 8px;
+}
+.cartao__acoes {
+  gap: 8px;
+  padding-top: 4px;
+}
+.cartao__toque {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--raio-4);
+}
+
+.chat-cheio {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--fundo-base);
+}
+.chat-cheio__chat {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.chat-cheio__cabecalho {
+  gap: 10px;
+  padding: 12px 20px 12px 12px;
+}
+.chat-cheio__cabecalho .botao-icone {
+  padding: 8px;
+}
+.chat-cheio__titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.chat-cheio .tela {
+  padding: 8px 20px;
+}
+.chat-cheio__responder {
+  display: flex;
+  flex-direction: column;
+}
+.chat-cheio__rapidas {
+  gap: 8px;
+  padding: 0 16px;
+  overflow-x: auto;
+}
+.chat-cheio__responder .responder {
+  margin: 12px 16px 20px;
+}
+.chat-cheio__pedido {
+  padding: 12px 12px 20px;
+}
+
+@media (max-height: 499px) {
+  .chat-cheio {
+    flex-direction: row;
+  }
+  .chat-cheio__cabecalho {
+    padding: 8px 16px 8px 12px;
+  }
+  .chat-cheio__cabecalho .botao-icone {
+    padding: 6px;
+  }
+  .chat-cheio__titulo {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .chat-cheio__titulo span {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .chat-cheio .tela {
+    padding: 4px 20px;
+  }
+  .chat-cheio__responder {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+  .chat-cheio__rapidas {
+    flex: none;
+    padding: 0;
+  }
+  .chat-cheio__rapidas .botao:nth-child(n + 3) {
+    display: none;
+  }
+  .chat-cheio__responder .responder {
+    flex: 1;
+    margin: 0;
+    padding-block: 6px;
+  }
+  .chat-cheio__pedido {
+    padding: 8px 12px 10px;
+  }
+
+  .janela__cabecalho {
+    padding: 10px 14px 6px 18px;
+  }
+  .janela__rodape {
+    padding: 8px 12px 10px;
+  }
+}

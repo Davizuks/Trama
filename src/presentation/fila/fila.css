@@ -1,0 +1,83 @@
+.fila {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 32px;
+  min-height: 0;
+  padding: 20px 24px;
+}
+.fila__coluna {
+  gap: 2px;
+  min-width: 0;
+}
+.fila__coluna h3 {
+  padding-bottom: 4px;
+}
+
+.tarefa {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--borda-sutil);
+  color: var(--texto-1);
+}
+.tarefa__marca {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid var(--borda-forte);
+  border-radius: 50%;
+}
+.tarefa__texto {
+  gap: 2px;
+}
+.tarefa--feita {
+  color: var(--texto-3);
+  text-decoration: line-through;
+}
+.tarefa--feita .tarefa__marca {
+  border: 0;
+  background: var(--fundo-3);
+}
+.tarefa--feita .t-ui-12 {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.tarefa--compacta {
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  color: var(--texto-2);
+}
+.tarefa--compacta .tarefa__marca {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.tarefa--compacta.tarefa--feita {
+  color: var(--texto-3);
+}
+
+.recado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--borda-sutil);
+}
+
+@media (max-width: 599px) {
+  .fila {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 4px 20px;
+  }
+  .recado {
+    border-bottom: 0;
+  }
+}

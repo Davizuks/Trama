@@ -1,92 +1,149 @@
-/** Papéis que uma sessão pode assumir na teia. */
-export const ROLES = ['maestro', 'construtor', 'revisor', 'redator'] as const
-export type Role = (typeof ROLES)[number]
+export type ChatStatus = 'needs-you' | 'working' | 'stopped'
 
-export const isRole = (value: unknown): value is Role =>
-  typeof value === 'string' && (ROLES as readonly string[]).includes(value)
+export type Role = 'livre' | 'maestro' | 'construtor' | 'revisor' | 'redator'
 
-export interface ChatMessage {
-  author: 'user' | 'assistant' | 'tool'
+export interface TranscriptLine {
   text: string
+  strong?: boolean
 }
 
-/** Um chat do Claude Code aberto nesta máquina. */
-export interface ClaudeSession {
-  pid: number
+export interface ChatRequest {
+  kind: 'command' | 'edit' | 'crashed'
+  title: string
+  detail: string
+  context: string
+}
+
+export interface Chat {
   id: string
   name: string
-  cwd: string
-  /** `busy` e `idle` são os estados conhecidos; outros valores são exibidos como vieram. */
-  status: string
-  startedAt: number | null
-  updatedAt: number | null
-  /** Terminal da Trama em que o chat roda, ou `null` se foi aberto em outro terminal. */
-  terminalId: string | null
-  role: string | null
-  task: string | null
-  recent: ChatMessage[]
-  currentTool: string | null
+  role: Role
+  project: string
+  status: ChatStatus
+  lastActivity: string
+  summary: string
+  transcript: TranscriptLine[]
+  forkOf?: string
+  request?: ChatRequest
 }
 
-/** Um terminal criado pela Trama, rodando o Claude Code. */
-export interface TerminalInfo {
-  id: string
-  cwd: string
-  pid: number
-  role: Role | null
-}
-
-export interface BrainNote {
+export interface Task {
   id: string
   title: string
-  /** Subpasta do cérebro em que a nota está (`projetos`, `decisoes`...), ou vazio na raiz. */
-  group: string
-  path: string
-  /** Pasta de código que a nota descreve, quando ela é uma nota de projeto. */
-  projectDir: string | null
-  links: string[]
-}
-
-export interface BoardRow {
-  session: string
-  role: string
-  project: string
-  task: string
-  files: string
-}
-
-export interface QueueItem {
   done: boolean
+  note?: string
+}
+
+export interface Memo {
+  id: string
+  from: string
+  to: string
+  when: string
   text: string
 }
 
-export interface Board {
-  rows: BoardRow[]
-  queue: QueueItem[]
-  messages: string[]
-}
+export type BrainNodeKind = 'brain' | 'project' | 'note'
 
-export interface FolderOption {
+export interface BrainNode {
+  id: string
   label: string
-  path: string
+  kind: BrainNodeKind
 }
 
-/** Fotografia de tudo o que a Trama mostra em um instante. */
-export interface WebState {
-  now: number
-  workspaceDir: string
-  homeDir: string
-  sessions: ClaudeSession[]
-  terminals: TerminalInfo[]
-  notes: BrainNote[]
-  queue: QueueItem[]
-  messages: string[]
-  folders: FolderOption[]
+export interface Brain {
+  nodes: BrainNode[]
+  links: Array<[from: string, to: string]>
 }
 
-export interface OpenTerminalRequest {
-  cwd: string
-  role?: Role | null
-  /** Id de uma conversa já encerrada, para continuá-la dentro da Trama. */
-  resumeSessionId?: string | null
+export interface Notice {
+  id: string
+  chatId?: string
+  title: string
+  body: string
+  when: string
+  unread: boolean
 }
+
+export type Theme = 'escuro' | 'claro' | 'sistema'
+
+export interface Settings {
+  workFolder: string
+  brainFolder: string
+  defaultRole: Role
+  showExternalChats: boolean
+  notifyWhenNeeded: boolean
+  confirmBeforeClosing: boolean
+  theme: Theme
+}
+
+export type ServiceId = 'obsidian' | 'github' | 'figma'
+
+export interface Service {
+  id: ServiceId
+  name: string
+  description: string
+  connected: boolean
+  statusLabel: string
+}
+
+export interface ClaudeConnection {
+  mode: 'account' | 'api-key'
+  accountName: string
+  plan: string
+  /** Já vem mascarada: a chave inteira nunca chega ao navegador. */
+  maskedKey: string
+}
+
+export interface McpServer {
+  id: string
+  name: string
+  kind: 'http' | 'command'
+  command?: string
+  tools: number
+  scope: 'all' | string
+  enabled: boolean
+  needsLogin: boolean
+}
+
+export interface Account {
+  name: string
+  initials: string
+  workspace: string
+}
+
+export type SetupStepState = 'done' | 'pending' | 'error'
+
+export interface Setup {
+  claude: SetupStepState
+  workFolder: SetupStepState
+  brain: SetupStepState
+  obsidian: SetupStepState
+}
+
+export interface Workspace {
+  account: Account
+  chats: Chat[]
+  externalChats: number
+  tasks: Task[]
+  memos: Memo[]
+  brain: Brain
+  notices: Notice[]
+  settings: Settings
+  claude: ClaudeConnection
+  claudeLoggedIn: boolean
+  services: Service[]
+  mcpServers: McpServer[]
+  setup: Setup | null
+}
+
+export const ROLES: Array<{ id: Role; label: string; hint: string }> = [
+  { id: 'livre', label: 'Livre', hint: 'Um chat sem papel definido.' },
+  { id: 'maestro', label: 'Maestro', hint: 'Quebra o trabalho em tarefas e distribui.' },
+  {
+    id: 'construtor',
+    label: 'Construtor',
+    hint: 'Implementa uma tarefa da fila e roda os testes.',
+  },
+  { id: 'revisor', label: 'Revisor', hint: 'Revisa o trabalho pronto e aponta defeitos.' },
+  { id: 'redator', label: 'Redator', hint: 'Escreve textos a partir das notas do cérebro.' },
+]
