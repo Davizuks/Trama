@@ -1,0 +1,250 @@
+.grafo {
+  container-type: size;
+  touch-action: none;
+  user-select: none;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.grafo__area {
+  position: absolute;
+  inset: 24px 72px 40px;
+}
+.grafo__fios {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.grafo__fios line {
+  stroke: var(--borda-forte);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.grafo__area {
+  transform-origin: 0 0;
+}
+.grafo__fios {
+  overflow: visible;
+}
+.grafo--movendo,
+.grafo--movendo * {
+  cursor: grab !important;
+}
+.grafo--movendo:active,
+.grafo--movendo:active * {
+  cursor: grabbing !important;
+}
+.grafo .tela,
+.grafo .pedido__bloco {
+  user-select: text;
+}
+.grafo__centralizar {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 6px 10px;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-3);
+  background: var(--fundo-1);
+}
+.grafo__centralizar:hover {
+  color: var(--texto-1);
+}
+
+.no {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 120px;
+  margin-left: -60px;
+  text-align: center;
+  pointer-events: none;
+}
+.no__ponto {
+  border-radius: 50%;
+}
+.no--brain {
+  margin-top: -7px;
+  color: var(--texto-1);
+}
+.no--brain .no__ponto {
+  width: 14px;
+  height: 14px;
+  background: var(--texto-1);
+}
+.no--project {
+  margin-top: -5px;
+  color: var(--texto-2);
+}
+.no--project .no__ponto {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--texto-2);
+  background: var(--fundo-base);
+}
+.no--note {
+  margin-top: -3px;
+  color: var(--texto-3);
+}
+.no--note .no__ponto {
+  width: 6px;
+  height: 6px;
+  background: var(--texto-3);
+}
+
+@container (max-height: 300px) or (max-width: 560px) {
+  .no--note span:last-child {
+    display: none;
+  }
+}
+
+.no-chat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--borda-sutil);
+  border-radius: var(--raio-pilula);
+  background: var(--fundo-1);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+.no-chat--selecionado {
+  border-color: var(--borda-forte);
+  background: var(--fundo-2);
+}
+
+.vazio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 40px;
+  text-align: center;
+}
+.vazio h2 {
+  margin-top: 6px;
+}
+.vazio p {
+  max-width: 340px;
+}
+.vazio .botao {
+  margin-top: 10px;
+}
+
+.teia-desktop {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+.grafo--janelas .grafo__area {
+  --janela-largura: clamp(280px, 32cqw, 400px);
+  --janela-altura: clamp(180px, 31cqh, 280px);
+  inset: calc(var(--janela-altura) / 2 + 8px) calc(var(--janela-largura) / 2 + 20px)
+    calc(var(--janela-altura) / 4);
+}
+/* Centrada pelas margens, e não por transform, para o resize crescer à direita e para baixo. */
+.no-janela {
+  position: absolute;
+  display: flex;
+  width: var(--janela-largura);
+  height: var(--janela-altura);
+  min-width: 240px;
+  min-height: 150px;
+  max-width: 90cqw;
+  max-height: 90cqh;
+  margin: calc(var(--janela-altura) / -2) 0 0 calc(var(--janela-largura) / -2);
+  overflow: hidden;
+  border-radius: var(--raio-4);
+  box-shadow: var(--sombra-janela);
+  resize: both;
+}
+.no-janela .janela {
+  flex: 1;
+  box-shadow: none;
+}
+.no-janela--selecionada {
+  z-index: 1;
+}
+.no-janela:has(.pedido, .decisao) {
+  height: auto;
+}
+.no-janela:has(.pedido, .decisao) .tela {
+  min-height: 63px;
+}
+
+.teia-compacta {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+.teia-compacta .grafo {
+  flex: 0 0 42%;
+  min-height: 260px;
+}
+.teia-compacta__chat {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0 20px 20px;
+}
+.teia-compacta__chat .janela {
+  flex: 1;
+  box-shadow: none;
+}
+
+.faixa-chats {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  padding: 4px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.faixa-chats .linha-chat {
+  flex: 1 0 220px;
+  background: var(--fundo-1);
+}
+.faixa-chats .linha-chat--selecionada {
+  background: var(--fundo-2);
+}
+
+.teia-celular {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 16px 16px;
+}
+
+.teia-celular .grafo__area {
+  inset: 28px 20px 36px;
+}
+
+@media (max-height: 499px) {
+  .teia-celular .grafo__area {
+    inset: 20px 64px 36px;
+  }
+  .teia-celular {
+    padding: 0;
+  }
+  .teia-celular > .linha-chat {
+    display: none;
+  }
+  .no-chat {
+    padding: 6px 11px;
+  }
+  .grafo__area {
+    inset: 20px 64px 36px;
+  }
+}
