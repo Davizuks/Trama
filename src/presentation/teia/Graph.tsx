@@ -142,9 +142,17 @@ export function Graph({
         </svg>
         {points.map(renderPoint)}
       </div>
-      <button type="button" className="grafo__centralizar t-ui-12 c-2" onClick={fitAll}>
-        Centralizar
-      </button>
+      <div className="linha grafo__controles t-ui-12">
+        <span className="grafo__atalho c-3">
+          <kbd>Espaço</kbd> + arrastar para mover
+        </span>
+        <span className="grafo__atalho c-3">
+          <kbd>Ctrl</kbd> + roda para zoom
+        </span>
+        <button type="button" className="grafo__centralizar c-2" onClick={fitAll}>
+          Centralizar
+        </button>
+      </div>
     </div>
   )
 }

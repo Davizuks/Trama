@@ -41,10 +41,27 @@
 .grafo .pedido__bloco {
   user-select: text;
 }
-.grafo__centralizar {
+.grafo__controles {
   position: absolute;
   right: 16px;
   bottom: 16px;
+  gap: 16px;
+  cursor: auto;
+}
+.grafo__atalho kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-2);
+  background: var(--fundo-1);
+  color: var(--texto-2);
+  font: inherit;
+}
+@media (max-width: 1199px) {
+  .grafo__atalho {
+    display: none;
+  }
+}
+.grafo__centralizar {
   padding: 6px 10px;
   border: 1px solid var(--borda-forte);
   border-radius: var(--raio-3);
