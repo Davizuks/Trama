@@ -1,6 +1,9 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type CSSProperties } from 'react'
 import {
+  boardSize,
+  CHAT_WINDOW,
   COMPACT_SHAPE,
+  forkStepOn,
   WINDOW_SHAPE,
   drawGraph,
   type GraphPoint,
@@ -21,6 +24,11 @@ interface GraphProps {
   shape?: GraphShape
 }
 
+const WINDOW_SIZE_VARS = {
+  '--janela-largura': `${CHAT_WINDOW.width}px`,
+  '--janela-altura': `${CHAT_WINDOW.height}px`,
+} as CSSProperties
+
 const percent = (value: number) => `${value * 100}%`
 
 export function Graph({
@@ -28,13 +36,24 @@ export function Graph({
   selectedChatId,
   onSelectChat,
   chatsAsWindows = false,
-  shape = chatsAsWindows ? WINDOW_SHAPE : COMPACT_SHAPE,
+  shape: givenShape,
 }: GraphProps) {
   const { workspace } = useWorkspace()
   const canvas = useRef<HTMLDivElement>(null)
   const area = useRef<HTMLDivElement>(null)
-  const { view, spaceHeld, startPan, fitAll } = useCanvasView(canvas)
+  const { view, spaceHeld, startPan, fitAll } = useCanvasView(
+    canvas,
+    chatsAsWindows ? chats.length : undefined,
+  )
   const { moved, startDrag } = useDragPoints(area)
+  const chatsOnArc = chats.filter((chat) => !chat.forkOf).length
+  const board = useMemo(() => boardSize(chatsOnArc), [chatsOnArc])
+  const shape = useMemo(
+    () =>
+      givenShape ??
+      (chatsAsWindows ? { ...WINDOW_SHAPE, forkStep: forkStepOn(board) } : COMPACT_SHAPE),
+    [givenShape, chatsAsWindows, board],
+  )
   const drawing = useMemo(
     () => drawGraph(workspace.brain, chats, shape),
     [workspace.brain, chats, shape],
@@ -95,7 +114,10 @@ export function Graph({
       <div
         ref={area}
         className="grafo__area"
-        style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
+        style={{
+          transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+          ...(chatsAsWindows ? { ...board, ...WINDOW_SIZE_VARS } : {}),
+        }}
       >
         <svg
           className="grafo__fios"

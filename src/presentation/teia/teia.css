@@ -147,10 +147,7 @@
   min-height: 0;
 }
 .grafo--janelas .grafo__area {
-  --janela-largura: clamp(280px, 32cqw, 400px);
-  --janela-altura: clamp(180px, 31cqh, 280px);
-  inset: calc(var(--janela-altura) / 2 + 8px) calc(var(--janela-largura) / 2 + 20px)
-    calc(var(--janela-altura) / 4);
+  inset: 0 auto auto 0;
 }
 /* Centrada pelas margens, e não por transform, para o resize crescer à direita e para baixo. */
 .no-janela {
@@ -177,6 +174,7 @@
 }
 .no-janela:has(.pedido, .decisao) {
   height: auto;
+  min-height: var(--janela-altura);
 }
 .no-janela:has(.pedido, .decisao) .tela {
   min-height: 63px;

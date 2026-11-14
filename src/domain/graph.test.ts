@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   anchorFor,
+  boardSize,
+  forkStepOn,
   drawGraph,
   fitView,
   HOME_VIEW,
@@ -136,5 +138,41 @@ describe('fitView', () => {
 
   it('não amplia um conteúdo pequeno além do tamanho real', () => {
     expect(fitView({ x: 400, y: 200, width: 100, height: 100 }, canvas, origin).scale).toBe(1)
+  })
+})
+
+describe('boardSize', () => {
+  it('tem um tamanho mínimo e cresce com o número de chats', () => {
+    expect(boardSize(3)).toEqual({ width: 1300, height: 884 })
+    expect(boardSize(6).width).toBe(1980)
+    expect(boardSize(6).height).toBeGreaterThan(boardSize(3).height)
+  })
+})
+
+describe('forks ao lado do chat de origem', () => {
+  const board = boardSize(2)
+  const shape = { ...WINDOW_SHAPE, forkStep: forkStepOn(board) }
+  const parent = chat('pai', 'Portfólio')
+  const forks = [
+    { ...chat('f1', 'Portfólio'), forkOf: 'pai' },
+    { ...chat('f2', 'Portfólio'), forkOf: 'pai' },
+  ]
+  const { points } = drawGraph(brain, [parent, chat('outro', 'Outro'), ...forks], shape)
+  const at = (id: string) => points.find((point) => point.id === id)!
+
+  it('põe os forks em uma coluna ao lado do pai, para fora do centro', () => {
+    expect(at('pai').x).toBeLessThan(WINDOW_SHAPE.center.x)
+    expect(at('f1').x).toBeCloseTo(at('pai').x - shape.forkStep.x)
+    expect(at('f2').x).toBeCloseTo(at('f1').x)
+  })
+
+  it('centra a coluna de forks na altura do pai, com uma janela e um vão entre eles', () => {
+    expect((at('f1').y + at('f2').y) / 2).toBeCloseTo(at('pai').y)
+    expect(at('f2').y - at('f1').y).toBeCloseTo(shape.forkStep.y)
+  })
+
+  it('não gasta lugar no arco com os forks', () => {
+    expect(at('pai').x).toBeCloseTo(0)
+    expect(at('outro').x).toBeCloseTo(1)
   })
 })

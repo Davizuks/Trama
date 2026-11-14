@@ -63,6 +63,7 @@ export interface GraphShape {
   projects: Arc
   notes: [Arc, Arc]
   chats: Arc
+  forkStep?: Position
 }
 
 export const COMPACT_SHAPE: GraphShape = {
@@ -86,13 +87,13 @@ export const TALL_SHAPE: GraphShape = {
 }
 
 export const WINDOW_SHAPE: GraphShape = {
-  center: { x: 0.5, y: 0.56 },
+  center: { x: 0.5, y: 0.68 },
   projects: { start: 0.62, end: 0.88, rx: 0.2, ry: 0.2 },
   notes: [
     { start: 0.12, end: 0.38, rx: 0.28, ry: 0.3 },
     { start: 0.12, end: 0.38, rx: 0.18, ry: 0.18 },
   ],
-  chats: { start: 0.5, end: 1, rx: 0.5, ry: 0.52 },
+  chats: { start: 0.5, end: 1, rx: 0.5, ry: 0.61 },
 }
 
 function spread(count: number, arc: Arc): number[] {
@@ -106,6 +107,22 @@ function spread(count: number, arc: Arc): number[] {
 function onArc(turn: number, arc: Arc, center: GraphShape['center']): { x: number; y: number } {
   const angle = turn * 2 * Math.PI
   return { x: center.x + arc.rx * Math.cos(angle), y: center.y + arc.ry * Math.sin(angle) }
+}
+
+function placeForks(
+  parent: GraphPoint,
+  forks: Chat[],
+  step: Position,
+  center: Position,
+): GraphPoint[] {
+  const awayFromCenter = parent.x < center.x ? -1 : 1
+  return forks.map((fork, i) => ({
+    id: fork.id,
+    label: fork.name,
+    kind: 'chat',
+    x: parent.x + awayFromCenter * step.x,
+    y: parent.y + (i - (forks.length - 1) / 2) * step.y,
+  }))
 }
 
 export function anchorFor(brain: Brain, chat: Chat): string | undefined {
@@ -134,15 +151,30 @@ export function drawGraph(
     }))
   }
 
+  const besideParent = shape.forkStep !== undefined
+  const onArcChats = besideParent ? chats.filter((chat) => !chat.forkOf) : chats
+  const arcPoints = place(
+    onArcChats.map((chat) => ({ id: chat.id, label: chat.name })),
+    'chat',
+    [shape.chats],
+  )
+  const forkPoints = besideParent
+    ? arcPoints.flatMap((parent) =>
+        placeForks(
+          parent,
+          chats.filter((chat) => chat.forkOf === parent.id),
+          shape.forkStep!,
+          shape.center,
+        ),
+      )
+    : []
+
   const points: GraphPoint[] = [
     ...byKind('brain').map((node) => ({ ...node, ...shape.center })),
     ...place(byKind('project'), 'project', [shape.projects]),
     ...place(byKind('note'), 'note', shape.notes),
-    ...place(
-      chats.map((chat) => ({ id: chat.id, label: chat.name })),
-      'chat',
-      [shape.chats],
-    ),
+    ...arcPoints,
+    ...forkPoints,
   ]
 
   const chatWires = chats.flatMap((chat): Array<[string, string]> => {
@@ -180,5 +212,23 @@ export function fitView(
     // A escala é aplicada em torno de `origin`, por isso ele entra na conta.
     x: left - content.x * scale - origin.x * (1 - scale),
     y: top - content.y * scale - origin.y * (1 - scale),
+  }
+}
+
+export const CHAT_WINDOW = { width: 520, height: 380 }
+const WINDOW_GAP = 60
+const MIN_BOARD_WIDTH = 1300
+const BOARD_WIDTH_PER_CHAT = 330
+const BOARD_ASPECT = 0.68
+
+export function boardSize(chatsOnArc: number): { width: number; height: number } {
+  const width = Math.max(MIN_BOARD_WIDTH, BOARD_WIDTH_PER_CHAT * chatsOnArc)
+  return { width, height: Math.round(width * BOARD_ASPECT) }
+}
+
+export function forkStepOn(board: { width: number; height: number }): Position {
+  return {
+    x: (CHAT_WINDOW.width + WINDOW_GAP) / board.width,
+    y: (CHAT_WINDOW.height + WINDOW_GAP) / board.height,
   }
 }

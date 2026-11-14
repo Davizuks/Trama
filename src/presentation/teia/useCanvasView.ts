@@ -1,4 +1,11 @@
-import { useEffect, useState, type PointerEvent, type RefObject } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from 'react'
 import { fitView, HOME_VIEW, panView, zoomView, type View } from '../../domain/graph.ts'
 
 const ZOOM_STEP = 0.0015
@@ -10,7 +17,7 @@ const isTyping = () =>
 const isOverWindow = (target: EventTarget | null) =>
   target instanceof Element && target.closest('.no-janela') !== null
 
-export function useCanvasView(canvas: RefObject<HTMLElement | null>) {
+export function useCanvasView(canvas: RefObject<HTMLElement | null>, refitWhenChanges?: number) {
   const [view, setView] = useState<View>(HOME_VIEW)
   const [spaceHeld, setSpaceHeld] = useState(false)
 
@@ -110,6 +117,14 @@ export function useCanvasView(canvas: RefObject<HTMLElement | null>) {
     }
     setView(fitView(content, frame, origin))
   }
+
+  const latestFitAll = useRef(fitAll)
+  useLayoutEffect(() => {
+    latestFitAll.current = fitAll
+  })
+  useLayoutEffect(() => {
+    if (refitWhenChanges !== undefined) latestFitAll.current()
+  }, [refitWhenChanges])
 
   return { view, spaceHeld, startPan, fitAll }
 }
